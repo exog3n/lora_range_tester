@@ -11,8 +11,18 @@ exports.webServer = function() {
     res.sendFile(path.join(__dirname + '/index.html'));
   });
 
+  // app.get('/jquery.js', function(req, res) {
+  //   res.sendFile(path.join(__dirname + '/jquery.js'));
+  // });
+  // app.get('/leaflet.js', function(req, res) {
+  //   res.sendFile(path.join(__dirname + '/leaflet.js'));
+  // });
   app.get('/socket.io.js', function(req, res) {
     res.sendFile(path.join(__dirname + '/socket.io.js'));
+  });
+
+  app.get('/payloads.json', function(req, res) {
+    res.sendFile(path.join(__dirname + '/payloads.json'));
   });
 
   // app.get('/lib/tf.min.js', function(req, res) {
@@ -35,9 +45,9 @@ exports.webServer = function() {
   //   res.sendFile(path.join(__dirname + '/demo_util.js'));
   // });
 
-  app.get('/posenet.js', function(req, res) {
-    res.sendFile(path.join(__dirname + '/posenet.js'));
-  });
+  // app.get('/posenet.js', function(req, res) {
+  //   res.sendFile(path.join(__dirname + '/posenet.js'));
+  // });
 
   app.get('/nodebot.js', function(req, res) {
     res.sendFile(path.join(__dirname + '/nodebot.js'));
@@ -48,6 +58,9 @@ exports.webServer = function() {
   app.get('/ttn_app_server.js', function(req, res) {
     res.sendFile(path.join(__dirname + '/ttn_app_server.js'));
   });
+  app.get('/lora_node.js', function(req, res) {
+    res.sendFile(path.join(__dirname + '/lora_node.js'));
+  });
 
 
   // load web server with socket.io
@@ -56,9 +69,13 @@ exports.webServer = function() {
 
   const serialport = require('./serial_com.js');
   let ports = serialport.serial();
+  // console.log(ports[0])
+  // console.log(ports[1])
 
   const ttn_client = require('./ttn_app_server.js');
   let lora_client = ttn_client.lora_server();
+
+  const lora_node = require('./lora_node.js');
 
   // var server = https.createServer({
   //   key: fs.readFileSync('./example.key'),
@@ -121,14 +138,38 @@ exports.webServer = function() {
         //   mosca.sendMessage(iotServer, cmd, curData, 'r');
         // }else if (cmd=='gps')
           // mosca.sendMessage(iotServer, cmd, curData);
+
           serialport.sendMessage(ports[0], cmd, curData);
-          serialport.sendMessage(ports[1], cmd, curData);
+          // serialport.sendMessage(ports[1], cmd, curData);
+          // lora_node.sendMessage(cmd, curData); // send payload from rpi dragino
+
         return curData;
       }
     //   }
     // }
     // return prvData;
   }
+
+  // check for new payloads from cloud
+  const axios = require('axios');
+  let cloudPayloadsLength = 0;
+  let payloadsLocalStore = [];
+  setInterval(()=>{
+    axios.get('http://lora.hmu.gr:5000/payloads/uplinks')
+      .then(response => {
+        let payloads = response.data;
+        if(payloads.length > cloudPayloadsLength){
+          let lastPayload = payloads[payloads.length-1]
+          payloadsLocalStore.push(lastPayload);
+          cloudPayloadsLength = payloads.length;
+          io.sockets.emit('payloads',lastPayload);
+        }
+      })
+      .catch(error => {
+        // console.log(error);
+        console.log('error on request');
+      });
+  },3000)
 
   // function isEquivalent(a, b) {
   //   // Create arrays of property names

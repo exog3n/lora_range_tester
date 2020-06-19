@@ -9,10 +9,12 @@ const serial = function() {
     maxLength:32
   };
 
-  const port_ttn = new SerialPort('/dev/ttyACM0', { baudRate: settings.baudRate[1] });
-  const port_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
-  const parser_ttn = port_ttn.pipe(new Readline({ delimiter: settings.delimiter }));
-  const parser_drag = port_drag.pipe(new Readline({ delimiter: settings.delimiter }));
+  // const port_ttn = new SerialPort('/dev/ttyACM0', { baudRate: settings.baudRate[1] });
+  // const port_uno_drag = new SerialPort('/dev/ttyUSB1', { baudRate: settings.baudRate[1] });
+  const port_mega_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
+  // const parser_ttn = port_ttn.pipe(new Readline({ delimiter: settings.delimiter }));
+  // const parser_uno_drag = port_uno_drag.pipe(new Readline({ delimiter: settings.delimiter }));
+  const parser_mega_drag = port_mega_drag.pipe(new Readline({ delimiter: settings.delimiter }));
 
   // Read the port data
   // port_ttn.on("open", () => {
@@ -29,22 +31,34 @@ const serial = function() {
   // });
 
 
-  return [port_ttn,port_drag];
+  // return [port_ttn,port_drag];
+  return [parser_mega_drag];
+  // return [parser_uno_drag,parser_mega_drag];
 };
 
 
 
-const sendMessage = function(serial, cmd, data, par) {
+const sendMessage = function(serial, cmd, pid) {
 
-  let reduceData = {t:data.lat,n:data.lon};
-  let payload = JSON.stringify(reduceData);
-  console.log(payload)
-  serial.write(payload+'\n', (err) => {
+  console.log(pid)
+  // serial.write(pid.toString(), (err) => {
+  serial.write(pid+'\n', (err) => {
     if (err) {
       return console.log('Error on write: ', err.message);
     }
   });
 }
+// const sendMessage = function(serial, cmd, data, par) {
+//
+//   let reduceData = {t:data.lat,n:data.lon};
+//   let payload = JSON.stringify(reduceData);
+//   console.log(payload)
+//   serial.write(payload+'\n', (err) => {
+//     if (err) {
+//       return console.log('Error on write: ', err.message);
+//     }
+//   });
+// }
 
 module.exports.serial = serial;
 module.exports.sendMessage = sendMessage;
