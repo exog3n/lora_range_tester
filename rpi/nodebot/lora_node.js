@@ -1,4 +1,4 @@
-function sendMessage(cmd, pid) {
+function sendRpiMessage(cmd, pid) {
   // let reduceData = {
   //   t: data.loc.lat,
   //   n: data.loc.lon
@@ -17,4 +17,24 @@ function sendMessage(cmd, pid) {
   }catch(e){console.log(e)}
 }
 
-module.exports.sendMessage = sendMessage;
+function sendArduinoMessage(cmd, pid) {
+  const { spawn } = require('child_process');
+  const pythonDir = ('/home/pi/nodebot/arduino_serial.py'); // Path of python script folder
+  const python = "/usr/bin/python"; // Path of the Python interpreter
+  const pyArgs = [pythonDir, pid];
+  let result = "";
+  let resultError = "";
+  try{
+    const pyprog = spawn(python, pyArgs);
+    pyprog.stdout.on('data', function(data) {
+        result += data.toString();
+    });
+
+    pyprog.stderr.on('data', (data) => {
+        resultError += data.toString().replace(/Detector is not able to detect the language reliably.\n/g,"");
+    });
+  }catch(e){console.log(e)}
+}
+
+module.exports.sendRpiMessage = sendRpiMessage;
+module.exports.sendArduinoMessage = sendArduinoMessage;

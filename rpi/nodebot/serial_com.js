@@ -11,7 +11,7 @@ const serial = function() {
 
   // const port_ttn = new SerialPort('/dev/ttyACM0', { baudRate: settings.baudRate[1] });
 
-  const port_uno_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
+  const port_uno_drag = new SerialPort('/dev/ttyACM0', { baudRate: settings.baudRate[0] });
 
   // const port_uno_drag = new SerialPort('/dev/ttyUSB1', { baudRate: settings.baudRate[1] });
   // const port_mega_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
@@ -47,11 +47,26 @@ const sendMessage = function(serial, cmd, pid) {
 
   console.log(pid)
   // serial.write(pid.toString(), (err) => {
-  serial.write(pid+'\n', (err) => {
+  // serial.write(pid+'\n', (err) => {
+  serial.write(Buffer.from(pid+'\n', 'utf8'), (err) => {
     if (err) {
       return console.log('Error on write: ', err.message);
     }
   });
+
+  serial.on('error', function(err) {
+    console.log('Error: ', err.message)
+  })
+
+  // Read data that is available but keep the stream in "paused mode"
+  serial.on('readable', function () {
+    console.log('Data:', port.read())
+  })
+
+  // Switches the port into "flowing mode"
+  serial.on('data', function (data) {
+    console.log('Data:', data)
+  })
 }
 // const sendMessage = function(serial, cmd, data, par) {
 //

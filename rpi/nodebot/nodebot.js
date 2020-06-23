@@ -132,6 +132,7 @@
         record.payload = data.payload;
         record.devId = data.payload.end_device_ids.device_id;
         record.condition= 'success';
+        socket.emit('record',record);
         // let dataStr = record.devId + ', coords: ' + record.data.loc.lat +','+ record.data.loc.lon + ', gw: ' + record.payload.uplink_message.rx_metadata[0].gateway_ids.gateway_id + ', rssi:' + record.payload.uplink_message.rx_metadata[0].rssi;
         let dataStr = record.devId + ', coords: ' + record.data.loc.lat +','+ record.data.loc.lon + ', gw: ' + record.payload.uplink_message.rx_metadata[0].gateway_ids.gateway_id + ', rssi:' + record.payload.uplink_message.rx_metadata[0].rssi + ', sf: ' + record.payload.uplink_message.settings.data_rate.lora.spreading_factor;
         updateLog(dataStr);
