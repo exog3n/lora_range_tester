@@ -21,10 +21,6 @@
   //     socket.emit("pose", Number(this.checked)); //send button status to server (as 1 or 0)
   //   });
   // });
-  // socket.on('pose', function(data) { //get button status from client
-  //   document.getElementById("light").checked = data; //change checkbox according to push button on Raspberry Pi
-  //   socket.emit("pose", data); //send push button status to back to server
-  // });
 
   window.records = [];
 
@@ -63,34 +59,63 @@
     }
   }
 
-  $("#triggerPing").click(()=>{
+  $("#triggerRpi").click(()=>{
     getLocation((l)=>{
       // if (l.lat > 0 && l.lon > 0 && window.cycle>5){
       if (l.lat > 0 && l.lon > 0){
         // socket.emit("gps", {loc:l,cycle:window.cycle});
         let now = new Date();
         let secondsSinceEpoch = Math.round(now.getTime() / 1000); // used as payload id
-        window.records.push(new Record('default',secondsSinceEpoch,{loc:l,cycle:window.cycle})); // TODO start from previous json length
-        socket.emit("gps", secondsSinceEpoch);
+        window.records.push(new Record('Raspberry',secondsSinceEpoch,{loc:l,cycle:window.cycle})); // TODO start from previous json length
+        socket.emit("gps", {pid:secondsSinceEpoch, dev:'Raspberry'});
 
-        updateLog('Location has been sent to NodeBot and will be forwarded immediately to lora nodes.' + JSON.stringify(loc));
-        console.log('Location has been sent to NodeBot and will be forwarded immediately to lora nodes.',loc);
+        updateLog('Location has been sent to NodeBot and will be forwarded immediately to Rpi lora node.' + JSON.stringify(loc));
+        console.log('Location has been sent to NodeBot and will be forwarded immediately to Rpi lora node.',loc);
         window.cycle = 0;
       }
     });
-    $("#triggerPing").attr("disabled", true);
+    $("#triggerRpi").attr("disabled", true);
+    $("#triggerArduino").attr("disabled", true);
     // $("#triggerPing").text("Wait");
     setTimeout(()=>{
       // $("#triggerPing").text("Ping");
-      $("#triggerPing").attr("disabled", false);
+      $("#triggerRpi").attr("disabled", false);
+      $("#triggerArduino").attr("disabled", false);
     },10000);
-    updateLog('Wait 10 seconds until the next ping.');
-    console.log('Wait 10 seconds until the next ping.')
+    // updateLog('Wait 10 seconds until the next ping.');
+    // console.log('Wait 10 seconds until the next ping.')
+  })
+
+  $("#triggerArduino").click(()=>{
+    getLocation((l)=>{
+      // if (l.lat > 0 && l.lon > 0 && window.cycle>5){
+      if (l.lat > 0 && l.lon > 0){
+        // socket.emit("gps", {loc:l,cycle:window.cycle});
+        let now = new Date();
+        let secondsSinceEpoch = Math.round(now.getTime() / 1000); // used as payload id
+        window.records.push(new Record('Arduino',secondsSinceEpoch,{loc:l,cycle:window.cycle})); // TODO start from previous json length
+        socket.emit("gps", {pid:secondsSinceEpoch, dev:'Arduino'});
+
+        updateLog('Location has been sent to NodeBot and will be forwarded immediately to Arduino lora node.' + JSON.stringify(loc));
+        console.log('Location has been sent to NodeBot and will be forwarded immediately to Arduino lora node.',loc);
+        window.cycle = 0;
+      }
+    });
+    $("#triggerArduino").attr("disabled", true);
+    $("#triggerRpi").attr("disabled", true);
+    // $("#triggerPing").text("Wait");
+    setTimeout(()=>{
+      // $("#triggerPing").text("Ping");
+      $("#triggerArduino").attr("disabled", false);
+      $("#triggerRpi").attr("disabled", false);
+    },10000);
+    // updateLog('Wait 10 seconds until the next ping.');
+    // console.log('Wait 10 seconds until the next ping.')
   })
 
   let updateLog = function(data){
-    let time = (new Date().getUTCHours() - new Date().getTimezoneOffset()/60).toString()+':'+new Date().getMinutes().toString()+':'+new Date().getSeconds().toString();
-    $('#transMes').prepend('<li><em><small>'+time+'</small></em> <span>'+data+'</span></li>')
+    let time = (new Date().getUTCHours() - new Date().getTimezoneOffset()/60).toString().padStart(2, "0")+':'+new Date().getMinutes().toString().padStart(2, "0")+':'+new Date().getSeconds().toString().padStart(2, "0");
+    $('#payloads').prepend('<li><em><small>'+time+'</small></em> <span><small>'+data+'</small></span></li>')
   }
 
   socket.on('gps', function(data) {
@@ -99,80 +124,22 @@
   });
 
   socket.on('payloads', function(data) {
-    console.log('latest payload: ',data);
+    if(data.payload){
+      console.log('new payload: ',data);
+      let record = records.find((rec)=>{return rec.pid==data.payload.uplink_message.decoded_payload.raw}); // return record based on the message body (pid)
+      // let record = records[records.length-1] || {}; // just take the last record
+      if(record){
+        record.payload = data.payload;
+        record.devId = data.payload.end_device_ids.device_id;
+        record.condition= 'success';
+        // let dataStr = record.devId + ', coords: ' + record.data.loc.lat +','+ record.data.loc.lon + ', gw: ' + record.payload.uplink_message.rx_metadata[0].gateway_ids.gateway_id + ', rssi:' + record.payload.uplink_message.rx_metadata[0].rssi;
+        let dataStr = record.devId + ', coords: ' + record.data.loc.lat +','+ record.data.loc.lon + ', gw: ' + record.payload.uplink_message.rx_metadata[0].gateway_ids.gateway_id + ', rssi:' + record.payload.uplink_message.rx_metadata[0].rssi + ', sf: ' + record.payload.uplink_message.settings.data_rate.lora.spreading_factor;
+        updateLog(dataStr);
+        updateMap(loc, record);
+      }
+    }
   });
 
-
-
-  // function getPose(mode) {
-  //   if (mode == 'sidelights') {
-  //     var roomSize = window.videoSize; // Aka the camera area
-  //     // translate nose position to distance from center of room to left and right
-  //     let roomCenter = roomSize / 2;
-  //     if (window.poses) {
-  //       var roomPos = window.poses[0].keypoints[0].position.x; // pos of the nose
-  //       pose.l = (roomCenter - roomPos).toFixed(0) || 0;
-  //       pose.r = (roomPos - roomCenter).toFixed(0) || 0;
-  //     }
-  //     return {
-  //       l: pose.l,
-  //       r: pose.r,
-  //       mode: mode
-  //     };
-  //   } else if (mode == 'handlights') {
-  //     // console.log(window.poses[0])
-  //     let leftHandUp = false;
-  //     let rightHandUp = false;
-  //     let valueL = null;
-  //     let valueR = null;
-  //     let leftEye = {
-  //       x: window.poses[0].keypoints[1].position.x,
-  //       y: window.poses[0].keypoints[1].position.y
-  //     };
-  //     let rightEye = {
-  //       x: window.poses[0].keypoints[2].position.x,
-  //       y: window.poses[0].keypoints[2].position.y
-  //     };
-  //     let leftShoulder = {
-  //       x: window.poses[0].keypoints[5].position.x,
-  //       y: window.poses[0].keypoints[5].position.y
-  //     };
-  //     let rightShoulder = {
-  //       x: window.poses[0].keypoints[6].position.x,
-  //       y: window.poses[0].keypoints[6].position.y
-  //     };
-  //     let leftWrist = {
-  //       x: window.poses[0].keypoints[9].position.x,
-  //       y: window.poses[0].keypoints[9].position.y
-  //     };
-  //     let rightWrist = {
-  //       x: window.poses[0].keypoints[10].position.x,
-  //       y: window.poses[0].keypoints[10].position.y
-  //     };
-  //     if (leftWrist.x<leftEye.x && leftWrist.x<leftShoulder.x && leftWrist.y<leftEye.y && leftWrist.y<leftShoulder.y){
-  //       // leftHandUp=true;
-  //       valueL=1
-  //       // console.dir("leftHandUp")
-  //     }else{
-  //       // leftHandUp=false;
-  //       valueL=0
-  //     }
-  //     if (rightWrist.x>rightEye.x && rightWrist.x>rightShoulder.x && rightWrist.y<rightEye.y && rightWrist.y<rightShoulder.y){
-  //       // rightHandUp=true;
-  //       valueR=1;
-  //         // console.dir("rightHandUp")
-  //     }else{
-  //       valueR=0;
-  //       // rightHandUp=false;
-  //     }
-  //     return {
-  //       l: valueL,
-  //       r: valueR,
-  //       mode: mode
-  //     };
-  //   }
-  //
-  // }
 
 
   setInterval(function() {

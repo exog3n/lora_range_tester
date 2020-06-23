@@ -59,15 +59,8 @@ void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 static const u1_t PROGMEM APPKEY[16] = { 0x2B, 0x5E, 0x44, 0x54, 0x60, 0xA1, 0x4C, 0xC9, 0xA9, 0x8C, 0x81, 0x9F, 0x79, 0x20, 0x9C, 0xD8 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
-// char* mydata;
-// static uint8_t mydata;
-// static byte mydata[4];
-// static uint32_t mydata;
-const byte DATA_MAX_SIZE = 32;
-// std::String rpimsg;
 uint8_t *buf;
 int msgsize;
-// byte mydata;
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty)
@@ -212,6 +205,11 @@ void send_message(osjob_t* j) {
     LMIC_setTxData2(1, buf, msgsize, 0);
     // memset(rpibt, 0, sizeof(rpibt));
     Serial.println(F("Packet queued"));
+
+    // disable duty cycle limits
+    LMIC.bands[BAND_MILLI].avail =
+   LMIC.bands[BAND_CENTI].avail =
+   LMIC.bands[BAND_DECI ].avail = os_getTime();
   }
 }
 

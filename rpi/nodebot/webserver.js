@@ -139,9 +139,15 @@ exports.webServer = function() {
         // }else if (cmd=='gps')
           // mosca.sendMessage(iotServer, cmd, curData);
 
-          serialport.sendMessage(ports[0], cmd, curData);
-          // serialport.sendMessage(ports[1], cmd, curData);
-          // lora_node.sendMessage(cmd, curData); // send payload from rpi dragino
+
+          if(curData.dev == 'Arduino'){
+            // serialport.sendMessage(ports[0], cmd, curData);
+            // serialport.sendMessage(ports[1], cmd, curData);
+          }
+          if(curData.dev == 'Raspberry'){
+            lora_node.sendMessage(cmd, curData.pid); // send payload from rpi dragino
+          }
+
 
         return curData;
       }
@@ -157,12 +163,14 @@ exports.webServer = function() {
   setInterval(()=>{
     axios.get('http://lora.hmu.gr:5000/payloads/uplinks')
       .then(response => {
-        let payloads = response.data;
+        let payloads = response.data.sort((a,b)=>{return new Date(a.payload.received_at).getTime() - new Date(b.payload.received_at).getTime()});
+        // let payloads = response.data.filter(data => Number.isInteger(data.name)).sort((a,b)=>{return b.name - a.name});
         if(payloads.length > cloudPayloadsLength){
           let lastPayload = payloads[payloads.length-1]
           payloadsLocalStore.push(lastPayload);
           cloudPayloadsLength = payloads.length;
           io.sockets.emit('payloads',lastPayload);
+          updateJson(payloadsLocalStore);
         }
       })
       .catch(error => {
@@ -196,6 +204,53 @@ exports.webServer = function() {
   //   // are considered equivalent
   //   return true;
   // }
+
+
+  let jsonString = '';
+  let historyLoaded = false;
+
+  fs.readFile('payloads.json', 'utf8', (err, jsonString) => {
+    if (err) {
+        console.log("File read failed:", err)
+        return
+    }
+    console.log('File data:', jsonString);
+    if(jsonString.length!=0){
+      records = JSON.parse(jsonString);
+      Object.keys(records).forEach(p=>{records[p].new = false;});
+    }
+    historyLoaded = true;
+  });
+
+  function updateJson(records){
+    // let mes = payload.payload_raw.toString();
+    // mes = mes.replace("\00","");
+    // if(mes.substr(mes.length-1)!='}'){
+    //   mes+='}';
+    // }
+
+    //let alreadyMessages = Object.values(ttn.payloads).map(p=>{return p.message;});
+    // if((!Object.values(ttn.payloads).find(p=>{return p.message == mes && p.dev == payload.dev_id})) && payload.counter > 0){
+    //if(alreadyMessages.indexOf(mes) == -1 || (alreadyMessages.indexOf(mes) != -1 && payload.dev_id)){
+      // let id = payload.dev_id+'_'+payload.counter;
+      // ttn.payloads[id]={"dev":payload.dev_id,"id":payload.counter,"message":mes,"time":payload.metadata.time,"raw":payload, "new":true};
+      //TODO write only if there is a new value
+      Object.keys(records).forEach(p=>{records[p].new = true;});
+      let jsonContent = JSON.stringify(records);
+      if(historyLoaded){
+        fs.writeFile("payloads.json", jsonContent, 'utf8', function (err) {
+            if (err) {
+                console.log("An error occured while writing JSON Object to File.");
+                return console.log(err);
+            }
+            // console.log('the new payload is: ', mes);
+            console.log("JSON file has been updated.");
+        });
+      }
+    // }
+  }
+
+
 
 
   return io;

@@ -15,28 +15,29 @@ let trsD = [];
   rmap.invalidateSize();
 
 })(window);
-function readRemoteData(){
+// function readRemoteData(){
+//   return data[data.length-1];
+// }
+//
+// function getTrs(data){
+//     let lastData = readRemoteData();
+//     if(data.length == 0 || data[data.length-1] != lastData){   // IT is asynchronous so?
+//       trsD.push(lastData);
+//       return lastData;
+//     }
+//     return null;
+// }
 
-  return data[data.length-1];
-}
+window.updateMap = function(position, record) {
+  // let newTr = getTrs(trsD);
 
-function getTrs(data){
-    let lastData = readRemoteData();
-    if(data.length == 0 || data[data.length-1] != lastData){   // IT is asynchronous so?
-      trsD.push(lastData);
-      return lastData;
-    }
-    return null;
-}
-
-window.updateMap = function(position) {
-
-  let newTr = getTrs(trsD);
-
+  let newTr = (record) ? record.data.loc : null;
   // the gateway marker
   //let marker = L.marker([gw.lat, gw.lon]).addTo(rmap);
+  if(mypos){
+      rmap.removeLayer(mypos);
+  }
 
-  map.removeLayer(mypos);
   mypos = L.circle([position.lat, position.lon], {
     color: 'red',
     fillColor: 'red',
@@ -46,12 +47,14 @@ window.updateMap = function(position) {
   mypos.bindPopup("<b>Details</b><br>nodes").openPopup();
 
   if(newTr){
+    trsD.push(newTr)
     trsP.push(L.circle([newTr.lat, newTr.lon], {
       color: 'green',
       fillColor: 'green',
       fillOpacity: 0.5,
       radius: 20
-    }).addTo(rmap)).bindPopup("<b>Transmission</b><br>Line of sight, spreading factor, airtime, distance.").openPopup();
+    }).addTo(rmap));
+    trsP[trsP.length - 1].bindPopup("<b>Transmission</b><br>Line of sight, spreading factor, airtime, distance.").openPopup();
   }
 
 

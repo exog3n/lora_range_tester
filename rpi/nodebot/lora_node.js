@@ -7,12 +7,14 @@ function sendMessage(cmd, pid) {
   console.log('pid', pid);
 
   const execFile = require('child_process').execFile;
-  const child = execFile('/home/pi/raspi-lmic/examples/ttn-otaa/ttn-otaa',[pid], (error, stdout, stderr) => {
-    if (error) {
-      throw error;
-    }
-    console.log(stdout);
-  });
+  try{
+    const child = execFile('/home/pi/raspi-lmic/examples/ttn-otaa/ttn-otaa',[pid], (error, stdout, stderr) => {
+      if (error) {
+        throw error;
+      }
+      console.log(stdout);
+    });
+  }catch(e){console.log(e)}
 }
 
 module.exports.sendMessage = sendMessage;

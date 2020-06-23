@@ -10,11 +10,15 @@ const serial = function() {
   };
 
   // const port_ttn = new SerialPort('/dev/ttyACM0', { baudRate: settings.baudRate[1] });
+
+  const port_uno_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
+
   // const port_uno_drag = new SerialPort('/dev/ttyUSB1', { baudRate: settings.baudRate[1] });
-  const port_mega_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
+  // const port_mega_drag = new SerialPort('/dev/ttyUSB0', { baudRate: settings.baudRate[0] });
+
   // const parser_ttn = port_ttn.pipe(new Readline({ delimiter: settings.delimiter }));
-  // const parser_uno_drag = port_uno_drag.pipe(new Readline({ delimiter: settings.delimiter }));
-  const parser_mega_drag = port_mega_drag.pipe(new Readline({ delimiter: settings.delimiter }));
+  const parser_uno_drag = port_uno_drag.pipe(new Readline({ delimiter: settings.delimiter }));
+  // const parser_mega_drag = port_mega_drag.pipe(new Readline({ delimiter: settings.delimiter }));
 
   // Read the port data
   // port_ttn.on("open", () => {
@@ -32,7 +36,8 @@ const serial = function() {
 
 
   // return [port_ttn,port_drag];
-  return [parser_mega_drag];
+  return [parser_uno_drag];
+  // return [parser_mega_drag];
   // return [parser_uno_drag,parser_mega_drag];
 };
 
