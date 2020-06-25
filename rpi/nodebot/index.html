@@ -80,9 +80,10 @@
 
 <body>
   <div id="main">
-     <div id="curLocation"></div>
-     <button id='triggerRpi'>Ping Raspberry</button>
-     <button id='triggerArduino'>Ping Arduino</button>
+     <div id="curLocation" style="float:left;margin:0 20px;"></div>
+     <div id="gwLocation" style="float:right"><form><input class='lat' type='text' placeholder='lat'><input class='lon' type='text' placeholder='lon'><button type='button' id="#gwLoc" onclick='gwLoc = {lat:$("#gwLocation .lat").val(),lon:$("#gwLocation .lon").val()};drawGw(gwLoc);'>Submit Gateway</button></form></div>
+     <div id="rpi" style="margin:10px;"><button id='triggerRpi' class='trigger'>Ping Raspberry</button><span class="count"></span></div>
+     <div id="arduino" style="margin:10px;"><button id='triggerArduino' class='trigger'>Ping Arduino</button><span class="count"></span></div>
      <div id="rangeMap"></div>
      <div id="payloads"></div>
   </div>

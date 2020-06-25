@@ -197,20 +197,37 @@ void onEvent (ev_t ev) {
 
 void send_message(osjob_t* j) {
   // Check if there is not a current TX/RX job running
-  if (LMIC.opmode & OP_TXRXPEND) {
-    Serial.println(F("OP_TXRXPEND, not sending"));
-  } else {
+  // if (LMIC.opmode & OP_TXRXPEND) {
+  //   Serial.println(F("OP_TXRXPEND, not sending"));
+  // } else {
     // Prepare upstream data transmission at the next possible time.
     // LMIC_setTxData2(1, rpibt, sizeof(rpibt), 0);
+
+    LMIC.bands[BAND_MILLI].avail =
+    LMIC.bands[BAND_CENTI].avail =
+    LMIC.bands[BAND_DECI ].avail = os_getTime();
+    LMIC.datarate=DR_SF12;
+    int channel = 0;
+    int dr = DR_SF12;
+    for(int i=0; i<9; i++) { // For EU; for US use i<71
+        if(i != channel) {
+        LMIC_disableChannel(i);
+    }
+    }
+    LMIC_setDrTxpow(dr, 14);
+    // Maximum TX power
+    // LMIC.txpow = 27;
+    // Use a medium spread factor. This can be increased up to SF12 for
+    // better range, but then the interval should be (significantly)
+    // lowered to comply with duty cycle limits as well.
+    // LMIC.datarate = DR_SF12;
+    // This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
+    // LMIC.rps = updr2rps(LMIC.datarate);
+
     LMIC_setTxData2(1, buf, msgsize, 0);
     // memset(rpibt, 0, sizeof(rpibt));
     Serial.println(F("Packet queued"));
-
-    // disable duty cycle limits
-    LMIC.bands[BAND_MILLI].avail =
-   LMIC.bands[BAND_CENTI].avail =
-   LMIC.bands[BAND_DECI ].avail = os_getTime();
-  }
+  // }
 }
 
 

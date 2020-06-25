@@ -32,19 +32,11 @@ exports.webServer = function() {
     res.sendFile(path.join(__dirname + '/lora_node.js'));
   });
 
-  const serialport = require('./serial_com.js');
-  let ports = serialport.serial();
-  // console.log(ports[0])
-  // console.log(ports[1])
-
-  const ttn_client = require('./ttn_app_server.js');
-  let lora_client = ttn_client.lora_server();
-
   const lora_node = require('./lora_node.js');
 
   var server = https.createServer({
-      key: fs.readFileSync('./example.key'),
-      cert: fs.readFileSync('./example.crt'),
+      key: fs.readFileSync(path.join(__dirname + '/example.key')),
+      cert: fs.readFileSync(path.join(__dirname + '/example.crt')),
       requestCert: false,
       rejectUnauthorized: false
     }, app)
@@ -73,13 +65,22 @@ exports.webServer = function() {
 
   // simple socket.io
   io.sockets.on('connection', function(socket) { // WebSocket Connection
+    console.log('New socket connection')
     let prvData = null;
-    socket.on('pose', function(data) { //get light intensity status from client
-      prvData = resController('pose', data, prvData);
-    });
     socket.on('gps', function(data) {
+      socket.emit('reply',data.pid+' received and will be sent to gateway');
       prvData = resController('gps', data, prvData);
     });
+    socket.on('record',(record)=>{
+      socket.emit('reply',record.pid + ' payload confirmed that was transmitted succesfully');
+      records.push(record);
+      updateJson(records);
+    })
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      // socket.emit('disconnect');
+      // io = require('socket.io').listen(server);
+    })
   });
 
   function resController(cmd, data, prvData) {
@@ -111,10 +112,6 @@ exports.webServer = function() {
           payloadsLocalStore.push(lastPayload);
           cloudPayloadsLength = payloads.length;
           io.sockets.emit('payloads',lastPayload);
-          io.sockets.on('record',(record)=>{
-            console.log(record)
-            updateJson(record);
-          })
         }
       })
       .catch(error => {
@@ -123,7 +120,7 @@ exports.webServer = function() {
       });
   },3000)
 
-
+  let records = [];
   let jsonString = '';
   let historyLoaded = false;
 
@@ -135,7 +132,8 @@ exports.webServer = function() {
     // console.log('File data:', jsonString);
     if(jsonString.length!=0){
       records = JSON.parse(jsonString);
-      Object.keys(records).forEach(p=>{records[p].new = false;});
+      // Object.keys(records).forEach(p=>{records[p].new = false;});
+      records.forEach(p=>{records[p].new = false;});
     }
     historyLoaded = true;
   });
@@ -159,3 +157,26 @@ exports.webServer = function() {
 
   return io;
 };
+
+
+
+  // function updateJson(record){
+  //   let oldRecords = {};
+  //   fs.readFile('payloads.json', 'utf8', (err, jsonString) => {
+  //     if (err) {
+  //         console.log("File read failed:", err)
+  //         return
+  //     }
+  //     oldRecords = JSON.parse(jsonString);
+  //   });
+  //   let jsonContent = JSON.stringify(Object.assign(record, oldRecords));
+  //   if(historyLoaded){
+  //     fs.writeFile("payloads.json", jsonContent, 'utf8', function (err) {
+  //         if (err) {
+  //             console.log("An error occured while writing JSON Object to File.");
+  //             return console.log(err);
+  //         }
+  //         console.log("JSON file has been updated.");
+  //     });
+  //   }
+  // }
