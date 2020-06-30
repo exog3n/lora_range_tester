@@ -124,25 +124,30 @@ exports.webServer = function() {
   let jsonString = '';
   let historyLoaded = false;
 
-  fs.readFile('payloads.json', 'utf8', (err, jsonString) => {
+try{
+  fs.readFile(path.join(__dirname + '/payloads.json'), 'utf8', (err, jsonString) => {
     if (err) {
         console.log("File read failed:", err)
         return
     }
-    // console.log('File data:', jsonString);
+    console.log('File data:', jsonString);
     if(jsonString.length!=0){
       records = JSON.parse(jsonString);
       // Object.keys(records).forEach(p=>{records[p].new = false;});
-      records.forEach(p=>{records[p].new = false;});
+      // records.forEach(p=>{records[p]['new'] = false;});
     }
     historyLoaded = true;
   });
+}catch(e){
+  console.log(e);
+}
+
 
   function updateJson(records){
       // Object.keys(records).forEach(p=>{records[p].new = true;});
       let jsonContent = JSON.stringify(records);
       if(historyLoaded){
-        fs.writeFile("payloads.json", jsonContent, 'utf8', function (err) {
+        fs.writeFile(path.join(__dirname + '/payloads.json'), jsonContent, 'utf8', function (err) {
             if (err) {
                 console.log("An error occured while writing JSON Object to File.");
                 return console.log(err);
